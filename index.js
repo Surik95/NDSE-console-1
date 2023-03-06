@@ -1,30 +1,30 @@
+#!/usr/bin/env node
+
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const moment = require('moment');
 
-module.exports = class Time {
-  constructor(process, change) {
+class Time {
+  constructor(process) {
     this.process = process;
-    this.change = change;
   }
 
   time() {
     const argv = this.argv();
     const period = this.period(argv);
-    if (isNaN(Number(argv._[0])) && this.change) {
-      console.log('Передан неверный параметр!');
-      return;
-    }
-    if (argv._.length !== 0) {
-      return this.changeTime(argv._[0], period);
+    if ((argv._[1] && isNaN(Number(argv._[1]))) || !argv._[0]) {
+      return 'Передан неверный параметр!';
+    } else if (argv._[1]) {
+      return this.changeTime(argv._, period);
     } else {
       return this.formatTime(moment(), period.format);
     }
   }
-  changeTime(quantity, { period, format }) {
-    quantity = this.change === 'add' ? +quantity : -quantity;
 
-    return this.formatTime(moment().add(quantity, period), format);
+  changeTime(arr, { period, format }) {
+    return arr[0] === 'add'
+      ? this.formatTime(moment().add(+arr[1], period), format)
+      : this.formatTime(moment().add(-arr[1], period), format);
   }
 
   formatTime(time, format) {
@@ -42,34 +42,43 @@ module.exports = class Time {
         period: 'day',
         format: 'DD',
       };
-    } else {
+    } else if (argv.year) {
       return {
         period: 'year',
         format: 'YYYY',
+      };
+    } else {
+      return {
+        period: '',
+        format: '',
       };
     }
   }
 
   argv() {
-    const argv = yargs(hideBin(this.process.argv))
-      .option('year', {
+    const argv = yargs(hideBin(this.process.argv)).options({
+      year: {
         alias: 'y',
         type: 'boolean',
         description: 'отображение года',
         default: false,
-      })
-      .option('month', {
+      },
+      month: {
         alias: 'm',
         type: 'boolean',
         description: 'отображение месяца',
         default: false,
-      })
-      .option('day', {
+      },
+      day: {
         alias: 'd',
         type: 'boolean',
         description: 'отображение даты в календарном месяце',
         default: false,
-      }).argv;
+      },
+    }).argv;
     return argv;
   }
-};
+}
+
+const time = new Time(process);
+console.log(time.time());
